@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import SnippetCard from "../components/SnippetCard";
 import type { Snippet } from "../data/mockData";
 import { FaFilter, FaSortAmountDown, FaSpinner } from "react-icons/fa";
-import { useLocation } from "react-router";
+import { useLocation, useSearchParams } from "react-router";
 import supabase from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 
@@ -10,7 +10,12 @@ export default function Dashboard() {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  
+  const searchQuery = searchParams.get("q") || "";
+  const [languageFilter, setLanguageFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
     const fetchSnippets = async () => {
@@ -21,7 +26,21 @@ export default function Dashboard() {
         query = query.eq('is_favorite', true);
       }
       
-      query = query.order('created_at', { ascending: false });
+      if (searchQuery) {
+        query = query.or(`title.ilike.%${searchQuery}%,code_content.ilike.%${searchQuery}%`);
+      }
+
+      if (languageFilter !== "all") {
+        query = query.eq('language', languageFilter);
+      }
+      
+      if (sortBy === "oldest") {
+        query = query.order('created_at', { ascending: true });
+      } else if (sortBy === "a-z") {
+        query = query.order('title', { ascending: true });
+      } else {
+        query = query.order('created_at', { ascending: false }); // newest
+      }
       
       const { data, error } = await query;
       if (data && !error) {
@@ -33,7 +52,7 @@ export default function Dashboard() {
     if (user) {
       fetchSnippets();
     }
-  }, [location.pathname, user]);
+  }, [location.pathname, user, searchQuery, languageFilter, sortBy]);
 
   const handleDelete = async (id: string) => {
     setSnippets(prev => prev.filter(s => s.id !== id));
@@ -62,14 +81,37 @@ export default function Dashboard() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
-            <FaFilter className="text-[var(--color-text-muted)]" />
-            Filter
-          </button>
-          <button className="flex items-center gap-2 bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
-            <FaSortAmountDown className="text-[var(--color-text-muted)]" />
-            Sort
-          </button>
+          <div className="relative group">
+            <FaFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] pointer-events-none" />
+            <select 
+              value={languageFilter}
+              onChange={(e) => setLanguageFilter(e.target.value)}
+              className="appearance-none bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] pl-9 pr-6 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer"
+            >
+              <option value="all">Languages</option>
+              <option value="JavaScript">JavaScript</option>
+              <option value="TypeScript">TypeScript</option>
+              <option value="React">React</option>
+              <option value="Python">Python</option>
+              <option value="Rust">Rust</option>
+              <option value="HTML">HTML</option>
+              <option value="CSS">CSS</option>
+              <option value="Go">Go</option>
+            </select>
+          </div>
+          
+          <div className="relative group">
+            <FaSortAmountDown className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] pointer-events-none" />
+            <select 
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="appearance-none bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] pl-9 pr-6 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer"
+            >
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="a-z">A - Z</option>
+            </select>
+          </div>
         </div>
       </div>
 

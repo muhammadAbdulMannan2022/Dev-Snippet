@@ -5,6 +5,8 @@ import Dashboard from "./pages/Dashboard";
 import EditSnippet from "./pages/EditSnippet";
 import ViewSnippet from "./pages/ViewSnippet";
 import ForgotPassword from "./pages/ForgotPassword";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import { AuthProvider } from "./context/AuthContext";
 
 const router = createBrowserRouter([
@@ -43,6 +45,14 @@ const router = createBrowserRouter([
       {
         path: "snippet/:id",
         element: <ViewSnippet />,
+      },
+      {
+        path: "profile",
+        element: <Profile />,
+      },
+      {
+        path: "settings",
+        element: <Settings />,
       },
     ],
   },

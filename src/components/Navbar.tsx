@@ -1,5 +1,5 @@
-import { Link } from "react-router";
-import { FaSearch, FaPlus, FaBell, FaUser, FaCog, FaSignOutAlt, FaBars } from "react-icons/fa";
+import { Link, useNavigate, useSearchParams } from "react-router";
+import { FaSearch, FaPlus, FaUser, FaCog, FaSignOutAlt, FaBars } from "react-icons/fa";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 
@@ -11,6 +11,22 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const { user, profile, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [searchValue, setSearchValue] = useState(searchParams.get("q") || "");
+
+  useEffect(() => {
+    setSearchValue(searchParams.get("q") || "");
+  }, [searchParams]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchValue.trim()) {
+      navigate(`/dashboard?q=${encodeURIComponent(searchValue.trim())}`);
+    } else {
+      navigate(`/dashboard`);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -38,14 +54,16 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
       {/* Search Bar */}
       <div className="flex-1 max-w-md hidden md:block">
-        <div className="relative group">
+        <form onSubmit={handleSearchSubmit} className="relative group">
           <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
           <input 
             type="text" 
-            placeholder="Search snippets (Cmd+K)" 
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            placeholder="Search snippets..." 
             className="w-full bg-[#161823] border border-[var(--color-border)] rounded-full pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all placeholder:text-[var(--color-text-muted)] font-mono text-gray-200"
           />
-        </div>
+        </form>
       </div>
 
       {/* Right Actions */}
@@ -60,14 +78,6 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         
         <div className="w-px h-6 bg-[var(--color-border)] mx-2"></div>
         
-        <button className="text-[var(--color-text-muted)] hover:text-white transition-colors relative">
-          <FaBell className="text-xl" />
-          <span className="absolute -top-1 -right-1 flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 ring-2 ring-[var(--color-surface)]"></span>
-          </span>
-        </button>
-
         <div className="relative ml-2" ref={profileRef}>
           <button 
             onClick={() => setIsProfileOpen(!isProfileOpen)}
