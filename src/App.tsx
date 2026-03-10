@@ -1,0 +1,57 @@
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router";
+import Auth from "./pages/Auth";
+import DashboardLayout from "./layouts/DashboardLayout";
+import Dashboard from "./pages/Dashboard";
+import EditSnippet from "./pages/EditSnippet";
+import ViewSnippet from "./pages/ViewSnippet";
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Navigate to="/auth" replace />,
+  },
+  {
+    path: "/auth",
+    element: <Auth />,
+  },
+  {
+    path: "/dashboard",
+    element: <DashboardLayout />,
+    children: [
+      {
+        index: true,
+        element: <Dashboard />,
+      },
+      {
+        path: "my-snippets",
+        element: <Dashboard />,
+      },
+      {
+        path: "public",
+        element: <Dashboard />,
+      },
+      {
+        path: "favorites",
+        element: <Dashboard />,
+      },
+      {
+        path: "new",
+        element: <EditSnippet />,
+      },
+      {
+        path: "edit/:id",
+        element: <EditSnippet />,
+      },
+      {
+        path: "snippet/:id",
+        element: <ViewSnippet />,
+      },
+    ],
+  },
+]);
+
+function App() {
+  return <RouterProvider router={router} />;
+}
+
+export default App;
