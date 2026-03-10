@@ -1,6 +1,6 @@
 import { MOCK_USER_ID } from "../data/mockData";
 import type { Snippet } from "../data/mockData";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { FaCopy, FaEdit, FaTrash, FaLock, FaGlobeAmericas } from "react-icons/fa";
 
 interface SnippetCardProps {
@@ -10,6 +10,7 @@ interface SnippetCardProps {
 
 export default function SnippetCard({ snippet, onDelete }: SnippetCardProps) {
   const isOwner = snippet.ownerId === MOCK_USER_ID;
+  const navigate = useNavigate();
 
   const handleCopy = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -27,7 +28,7 @@ export default function SnippetCard({ snippet, onDelete }: SnippetCardProps) {
   };
 
   return (
-    <Link to={`/dashboard/snippet/${snippet.id}`} className="block group h-full">
+    <div onClick={() => navigate(`/dashboard/snippet/${snippet.id}`)} className="block group h-full cursor-pointer">
       <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-md hover:shadow-xl hover:border-[var(--color-primary)]/50 transition-all flex flex-col h-[280px] overflow-hidden group-hover:-translate-y-1 relative">
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[var(--color-primary)] to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
@@ -105,6 +106,6 @@ export default function SnippetCard({ snippet, onDelete }: SnippetCardProps) {
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

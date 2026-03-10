@@ -1,7 +1,12 @@
 import { NavLink } from "react-router";
-import { FaTerminal, FaCode, FaRegUser, FaGlobe, FaRegHeart, FaCog } from "react-icons/fa";
+import { FaTerminal, FaCode, FaRegUser, FaGlobe, FaRegHeart, FaCog, FaTimes } from "react-icons/fa";
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
+}
+
+export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const navItems = [
     { label: "All Snippets", path: "/dashboard", icon: <FaCode /> },
     { label: "My Snippets", path: "/dashboard/my-snippets", icon: <FaRegUser /> },
@@ -11,10 +16,18 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-[var(--color-surface)] border-r border-[var(--color-border)] flex flex-col h-full shadow-lg shrink-0">
-      <div className="h-16 flex items-center px-6 border-b border-[var(--color-border)]">
-        <FaTerminal className="text-[var(--color-primary)] text-2xl mr-3" />
-        <span className="font-bold text-lg tracking-wide text-white">Dev Snippet</span>
+    <aside className={`fixed md:static inset-y-0 left-0 z-30 w-64 bg-[var(--color-surface)] border-r border-[var(--color-border)] flex flex-col h-full shadow-lg shrink-0 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className="h-16 flex items-center justify-between px-6 border-b border-[var(--color-border)]">
+        <div className="flex items-center">
+          <FaTerminal className="text-[var(--color-primary)] text-2xl mr-3" />
+          <span className="font-bold text-lg tracking-wide text-white">Dev Snippet</span>
+        </div>
+        <button 
+          onClick={() => setIsOpen(false)}
+          className="md:hidden text-[var(--color-text-muted)] hover:text-white"
+        >
+          <FaTimes />
+        </button>
       </div>
       
       <nav className="flex-1 flex flex-col p-4 gap-2 mt-2">
