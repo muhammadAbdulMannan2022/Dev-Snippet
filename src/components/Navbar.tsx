@@ -1,12 +1,14 @@
 import { Link } from "react-router";
 import { FaSearch, FaPlus, FaBell, FaUser, FaCog, FaSignOutAlt, FaBars } from "react-icons/fa";
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from "../context/AuthContext";
 
 interface NavbarProps {
   onMenuClick: () => void;
 }
 
 export default function Navbar({ onMenuClick }: NavbarProps) {
+  const { user, profile, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -72,9 +74,9 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
             className="flex items-center gap-2 group focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] rounded-full"
           >
             <img 
-              src="https://api.dicebear.com/7.x/notionists/svg?seed=Felix&backgroundColor=6366f1" 
+              src={profile?.image || user?.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${user?.email || 'user'}`} 
               alt="User Avatar" 
-              className="w-9 h-9 rounded-full ring-2 ring-[var(--color-border)] group-hover:ring-[var(--color-primary)] transition-all bg-[var(--color-surface-hover)]"
+              className="w-9 h-9 rounded-full ring-2 ring-[var(--color-border)] group-hover:ring-[var(--color-primary)] transition-all bg-[var(--color-surface-hover)] object-cover"
             />
           </button>
 
@@ -82,8 +84,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
             <div className="absolute right-0 mt-3 w-48 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="py-2">
                 <div className="px-4 py-2 border-b border-[var(--color-border)] mb-1">
-                  <p className="text-sm font-semibold text-white">Felix Developer</p>
-                  <p className="text-xs text-[var(--color-text-muted)] truncate">felix@example.com</p>
+                  <p className="text-sm font-semibold text-white">{profile?.name || user?.user_metadata?.name || 'Developer'}</p>
+                  <p className="text-xs text-[var(--color-text-muted)] truncate">{user?.email}</p>
                 </div>
                 <Link to="/dashboard/profile" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-200 hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-primary)] transition-colors">
                   <FaUser className="text-[var(--color-text-muted)]" /> Profile
@@ -92,7 +94,10 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                   <FaCog className="text-[var(--color-text-muted)]" /> Settings
                 </Link>
                 <div className="h-px bg-[var(--color-border)] my-1"></div>
-                <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors">
+                <button 
+                  onClick={logout}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                >
                   <FaSignOutAlt className="text-red-400" /> Log out
                 </button>
               </div>

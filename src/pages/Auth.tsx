@@ -1,15 +1,74 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
-import { FaGithub, FaTerminal } from "react-icons/fa";
+import { FaGithub, FaTerminal, FaSpinner } from "react-icons/fa";
+import supabase from "../lib/supabase";
+import { useAuth } from "../context/AuthContext";
 
 export default function Auth() {
+  const { user } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // mock auth success: navigate to dashboard
-    navigate("/dashboard");
+    setLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    if (isLogin) {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setErrorMsg(error.message);
+        setLoading(false);
+      }
+      // Effect hook relies on `user` context to safely handle redirect.
+    } else {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name }
+        }
+      });
+      if (error) {
+        setErrorMsg(error.message);
+        setLoading(false);
+      } else {
+        if (!data.session) {
+          setSuccessMsg("Success! Please check your email to verify your account before logging in.");
+          setIsLogin(true);
+          setPassword(""); // Clear password for safety
+          setLoading(false);
+        }
+        // Effect hook relies on `user` context to safely handle redirect.
+      }
+    }
+  };
+
+  const handleGithubLogin = async () => {
+    setLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: { redirectTo: window.location.origin + '/dashboard' }
+    });
+    if (error) {
+      setErrorMsg(error.message);
+      setLoading(false);
+    }
   };
 
   return (
@@ -34,6 +93,32 @@ export default function Auth() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {errorMsg && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg text-sm text-center">
+              {errorMsg}
+            </div>
+          )}
+          {successMsg && (
+            <div className="bg-green-500/10 border border-green-500/20 text-green-400 p-3 rounded-lg text-sm text-center">
+              {successMsg}
+            </div>
+          )}
+
+          {!isLogin && (
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+                Name
+              </label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-[#161823] border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all font-mono"
+                placeholder="Developer Name"
+              />
+            </div>
+          )}
           <div className="space-y-1">
             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
               Email
@@ -41,6 +126,8 @@ export default function Auth() {
             <input
               type="email"
               required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-[#161823] border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all font-mono"
               placeholder="developer@example.com"
             />
@@ -63,6 +150,8 @@ export default function Auth() {
             <input
               type="password"
               required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-[#161823] border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all font-mono"
               placeholder="••••••••"
             />
@@ -70,9 +159,10 @@ export default function Auth() {
 
           <button
             type="submit"
-            className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+            disabled={loading}
+            className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {isLogin ? "Sign In" : "Sign Up"}
+            {loading ? <FaSpinner className="animate-spin" /> : (isLogin ? "Sign In" : "Sign Up")}
           </button>
         </form>
 
@@ -86,7 +176,9 @@ export default function Auth() {
 
         <button
           type="button"
-          className="w-full bg-[#242738] hover:bg-surface-hover border border-border text-gray-200 font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+          onClick={handleGithubLogin}
+          disabled={loading}
+          className="w-full bg-[#242738] hover:bg-surface-hover border border-border text-gray-200 font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
         >
           <FaGithub className="text-lg" />
           GitHub
@@ -96,7 +188,11 @@ export default function Auth() {
           {isLogin ? "Don't have an account? " : "Already have an account? "}
           <button
             type="button"
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setErrorMsg("");
+              setSuccessMsg("");
+            }}
             className="text-primary hover:text-primary-hover font-medium transition-colors"
           >
             {isLogin ? "Sign up" : "Sign in"}

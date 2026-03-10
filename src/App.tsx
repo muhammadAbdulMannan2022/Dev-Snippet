@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import EditSnippet from "./pages/EditSnippet";
 import ViewSnippet from "./pages/ViewSnippet";
 import ForgotPassword from "./pages/ForgotPassword";
+import { AuthProvider } from "./context/AuthContext";
 
 const router = createBrowserRouter([
   {
@@ -56,7 +57,11 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 }
 
 export default App;
