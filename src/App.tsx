@@ -29,14 +29,6 @@ const router = createBrowserRouter([
         element: <Dashboard />,
       },
       {
-        path: "my-snippets",
-        element: <Dashboard />,
-      },
-      {
-        path: "public",
-        element: <Dashboard />,
-      },
-      {
         path: "favorites",
         element: <Dashboard />,
       },

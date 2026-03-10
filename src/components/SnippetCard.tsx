@@ -1,21 +1,23 @@
-import { MOCK_USER_ID } from "../data/mockData";
 import type { Snippet } from "../data/mockData";
 import { Link, useNavigate } from "react-router";
-import { FaCopy, FaEdit, FaTrash, FaLock, FaGlobeAmericas } from "react-icons/fa";
+import { FaCopy, FaEdit, FaTrash, FaLock, FaGlobeAmericas, FaHeart, FaRegHeart } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
 
 interface SnippetCardProps {
   snippet: Snippet;
   onDelete?: (id: string) => void;
+  onToggleFavorite?: (id: string, currentStatus: boolean) => void;
 }
 
-export default function SnippetCard({ snippet, onDelete }: SnippetCardProps) {
-  const isOwner = snippet.ownerId === MOCK_USER_ID;
+export default function SnippetCard({ snippet, onDelete, onToggleFavorite }: SnippetCardProps) {
+  const { user } = useAuth();
+  const isOwner = snippet.user_id === user?.id;
   const navigate = useNavigate();
 
   const handleCopy = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    navigator.clipboard.writeText(snippet.code);
+    navigator.clipboard.writeText(snippet.code_content);
     // could add a toast here
   };
 
@@ -25,6 +27,12 @@ export default function SnippetCard({ snippet, onDelete }: SnippetCardProps) {
     if(confirm('Delete snippet?')){
        if(onDelete) onDelete(snippet.id);
     }
+  };
+
+  const handleToggleFav = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if(onToggleFavorite) onToggleFavorite(snippet.id, snippet.is_favorite);
   };
 
   return (
@@ -47,7 +55,7 @@ export default function SnippetCard({ snippet, onDelete }: SnippetCardProps) {
               </span>
               
               <div className="flex items-center gap-1 text-[var(--color-text-muted)] mt-0.5">
-                {snippet.isPublic ? (
+                {snippet.is_public ? (
                   <><FaGlobeAmericas className="text-[10px]" /> <span className="opacity-80">Public</span></>
                 ) : (
                   <><FaLock className="text-[10px]" /> <span className="opacity-80">Private</span></>
@@ -66,24 +74,31 @@ export default function SnippetCard({ snippet, onDelete }: SnippetCardProps) {
             <FaCopy size={12} />
           </button>
           <pre className="text-xs font-mono text-[var(--color-text)] whitespace-pre-wrap overflow-hidden h-full text-ellipsis line-clamp-[6] opacity-80 group-hover/code:opacity-100 transition-opacity drop-shadow-sm pointer-events-none">
-            {snippet.code.length > 200 ? snippet.code.slice(0, 200) + '\\n...' : snippet.code}
+            {snippet.code_content.length > 200 ? snippet.code_content.slice(0, 200) + '\\n...' : snippet.code_content}
           </pre>
           <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[var(--color-surface)] to-transparent"></div>
         </div>
 
         <div className="p-4 pt-4 mt-auto flex justify-between items-center bg-[var(--color-surface)]">
           <div className="flex flex-wrap gap-1.5 truncate max-w-[60%]">
-            {snippet.tags.slice(0, 3).map(tag => (
+            {snippet.tags && snippet.tags.slice(0, 3).map(tag => (
               <span key={tag} className="text-[11px] bg-[var(--color-background)] text-[var(--color-text-muted)] border border-[var(--color-border)] px-2 py-1 rounded-md lowercase hover:bg-[var(--color-border)] transition-colors cursor-pointer">
                 #{tag}
               </span>
             ))}
-            {snippet.tags.length > 3 && (
+            {snippet.tags && snippet.tags.length > 3 && (
               <span className="text-[11px] text-[var(--color-text-muted)] flex items-center px-1">+{snippet.tags.length - 3}</span>
             )}
           </div>
 
           <div className="flex gap-2 isolate">
+            <button 
+              onClick={handleToggleFav}
+              className={`p-2 rounded-lg transition-colors focus:ring-2 focus:ring-pink-500 ${snippet.is_favorite ? 'text-pink-500 bg-pink-500/10 hover:bg-pink-500/20' : 'text-[var(--color-text-muted)] hover:text-pink-500 hover:bg-pink-500/10'}`}
+              title={snippet.is_favorite ? "Remove from Favorites" : "Add to Favorites"}
+            >
+              {snippet.is_favorite ? <FaHeart size={14} /> : <FaRegHeart size={14} />}
+            </button>
             {isOwner && (
               <>
                 <Link 

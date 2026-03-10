@@ -1,6 +1,5 @@
 import { NavLink } from "react-router";
-import { FaTerminal, FaCode, FaRegUser, FaGlobe, FaRegHeart, FaCog, FaTimes } from "react-icons/fa";
-
+import { FaTerminal, FaCode, FaRegHeart, FaCog, FaTimes } from "react-icons/fa";
 interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
@@ -9,8 +8,6 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const navItems = [
     { label: "All Snippets", path: "/dashboard", icon: <FaCode /> },
-    { label: "My Snippets", path: "/dashboard/my-snippets", icon: <FaRegUser /> },
-    { label: "Public Snippets", path: "/dashboard/public", icon: <FaGlobe /> },
     { label: "Favorites", path: "/dashboard/favorites", icon: <FaRegHeart /> },
     { label: "Settings", path: "/dashboard/settings", icon: <FaCog /> },
   ];

@@ -1,37 +1,62 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { mockSnippets } from "../data/mockData";
 import type { Snippet } from "../data/mockData";
-import { FaSave, FaArrowLeft, FaCode, FaTags } from "react-icons/fa";
+import { FaSave, FaArrowLeft, FaCode, FaTags, FaSpinner } from "react-icons/fa";
+import supabase from "../lib/supabase";
+import { useAuth } from "../context/AuthContext";
 
 export default function EditSnippet() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditing = Boolean(id);
+  const { user } = useAuth();
   
   const [formData, setFormData] = useState<Partial<Snippet>>({
     title: "",
     language: "JavaScript",
-    code: "",
-    isPublic: true,
+    code_content: "",
+    is_public: true,
     tags: [],
   });
   
   const [tagInput, setTagInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isEditing) {
-      const snippet = mockSnippets.find(s => s.id === id);
-      if (snippet) {
-        setFormData(snippet);
-      }
+    if (isEditing && id) {
+      const fetchSnippet = async () => {
+        const { data, error } = await supabase.from('snippets').select('*').eq('id', id).single();
+        if (data && !error) {
+          setFormData(data);
+        } else {
+          navigate('/dashboard');
+        }
+      };
+      fetchSnippet();
     }
-  }, [id, isEditing]);
+  }, [id, isEditing, navigate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // mock save:
-    navigate("/dashboard");
+    setLoading(true);
+
+    const snippetData: Partial<Snippet> = {
+      ...formData,
+      user_id: user?.id,
+    };
+
+    if (!isEditing) {
+      delete snippetData.id;
+    }
+
+    const { error } = await supabase.from('snippets').upsert(snippetData);
+
+    setLoading(false);
+    if (!error) {
+      navigate("/dashboard");
+    } else {
+      alert("Error saving snippet: " + error.message);
+    }
   };
 
   const handleAddTag = (e: React.KeyboardEvent) => {
@@ -150,8 +175,8 @@ export default function EditSnippet() {
                <div className="w-10 bg-[#161823] border-r border-[#2a2e42] h-full absolute left-0 top-0 zs-0 hidden sm:block pointer-events-none opacity-50"></div>
               <textarea 
                 required
-                value={formData.code}
-                onChange={e => setFormData({...formData, code: e.target.value})}
+                value={formData.code_content}
+                onChange={e => setFormData({...formData, code_content: e.target.value})}
                 className="w-full bg-transparent p-6 text-sm focus:outline-none font-mono text-gray-300 resize-none h-64 sm:h-auto z-10 sm:pl-14 selection:bg-[var(--color-primary)]/40 leading-relaxed focus:bg-[#161823]/30"
                 placeholder="Paste your brilliant code here..."
                 spellCheck="false"
@@ -164,20 +189,21 @@ export default function EditSnippet() {
               <div className="relative">
                 <input 
                   type="checkbox" 
-                  checked={formData.isPublic}
-                  onChange={e => setFormData({...formData, isPublic: e.target.checked})}
+                  checked={formData.is_public}
+                  onChange={e => setFormData({...formData, is_public: e.target.checked})}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-[var(--color-surface-hover)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-primary)] ring-2 ring-transparent group-hover:ring-[var(--color-primary)]/30 transition-all"></div>
               </div>
-              <span className="text-sm font-medium text-[var(--color-text-muted)] group-hover:text-white transition-colors">{formData.isPublic ? 'Public Snippet' : 'Private Snippet'}</span>
+              <span className="text-sm font-medium text-[var(--color-text-muted)] group-hover:text-white transition-colors">{formData.is_public ? 'Public Snippet' : 'Private Snippet'}</span>
             </label>
 
             <button 
               type="submit" 
-              className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-medium px-8 py-3 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 hover:shadow-[var(--color-primary)]/40 hover:-translate-y-0.5"
+              disabled={loading}
+              className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-medium px-8 py-3 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 hover:shadow-[var(--color-primary)]/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:-translate-y-0"
             >
-              <FaSave className="text-lg" />
+              {loading ? <FaSpinner className="animate-spin text-lg" /> : <FaSave className="text-lg" />}
               {isEditing ? 'Save Changes' : 'Create Snippet'}
             </button>
           </div>

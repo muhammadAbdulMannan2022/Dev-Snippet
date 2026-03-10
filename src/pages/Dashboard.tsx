@@ -1,10 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SnippetCard from "../components/SnippetCard";
-import { mockSnippets } from "../data/mockData";
-import { FaFilter, FaSortAmountDown } from "react-icons/fa";
+import type { Snippet } from "../data/mockData";
+import { FaFilter, FaSortAmountDown, FaSpinner } from "react-icons/fa";
+import { useLocation } from "react-router";
+import supabase from "../lib/supabase";
+import { useAuth } from "../context/AuthContext";
 
 export default function Dashboard() {
-  const [snippets, setSnippets] = useState(mockSnippets);
+  const [snippets, setSnippets] = useState<Snippet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchSnippets = async () => {
+      setLoading(true);
+      let query = supabase.from('snippets').select('*');
+      
+      if (location.pathname === '/dashboard/favorites') {
+        query = query.eq('is_favorite', true);
+      }
+      
+      query = query.order('created_at', { ascending: false });
+      
+      const { data, error } = await query;
+      if (data && !error) {
+        setSnippets(data);
+      }
+      setLoading(false);
+    };
+
+    if (user) {
+      fetchSnippets();
+    }
+  }, [location.pathname, user]);
+
+  const handleDelete = async (id: string) => {
+    setSnippets(prev => prev.filter(s => s.id !== id));
+    await supabase.from('snippets').delete().eq('id', id);
+  };
+
+  const handleToggleFavorite = async (id: string, currentStatus: boolean) => {
+    // Optimistic update
+    setSnippets(prev => 
+      prev.map(s => s.id === id ? { ...s, is_favorite: !currentStatus } : s)
+    );
+    await supabase.from('snippets').update({ is_favorite: !currentStatus }).eq('id', id);
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 relative">
@@ -32,16 +74,24 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
-        {snippets.map((snippet) => (
-          <SnippetCard 
-            key={snippet.id} 
-            snippet={snippet} 
-            onDelete={(id) => setSnippets(prev => prev.filter(s => s.id !== id))} 
-          />
-        ))}
+        {loading ? (
+          <div className="col-span-full flex flex-col items-center justify-center py-20 text-[var(--color-text-muted)]">
+             <FaSpinner className="animate-spin text-3xl text-[var(--color-primary)] mb-4" />
+             <p>Loading snippets...</p>
+          </div>
+        ) : (
+          snippets.map((snippet) => (
+            <SnippetCard 
+              key={snippet.id} 
+              snippet={snippet} 
+              onDelete={handleDelete} 
+              onToggleFavorite={handleToggleFavorite}
+            />
+          ))
+        )}
       </div>
       
-      {snippets.length === 0 && (
+      {!loading && snippets.length === 0 && (
         <div className="text-center py-20 bg-[var(--color-surface)] border border-dashed border-[var(--color-border)] rounded-2xl">
           <h2 className="text-xl font-semibold mb-2 text-white">No snippets found</h2>
           <p className="text-[var(--color-text-muted)] mb-6 text-sm">Create your first snippet to get started.</p>

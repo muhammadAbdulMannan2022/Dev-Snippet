@@ -1,14 +1,38 @@
 import { useParams, useNavigate, Link } from "react-router";
-import { mockSnippets, MOCK_USER_ID } from "../data/mockData";
-import { FaCopy, FaEdit, FaTrash, FaArrowLeft, FaCheck, FaGlobeAmericas, FaLock } from "react-icons/fa";
-import { useState } from "react";
+import { FaCopy, FaEdit, FaTrash, FaArrowLeft, FaCheck, FaGlobeAmericas, FaLock, FaSpinner, FaHeart, FaRegHeart } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import supabase from "../lib/supabase";
+import type { Snippet } from "../data/mockData";
+import { useAuth } from "../context/AuthContext";
 
 export default function ViewSnippet() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [snippet, setSnippet] = useState<Snippet | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  const snippet = mockSnippets.find(s => s.id === id);
+  useEffect(() => {
+    const fetchSnippet = async () => {
+      setLoading(true);
+      const { data, error } = await supabase.from('snippets').select('*').eq('id', id).single();
+      if (data && !error) {
+        setSnippet(data);
+      }
+      setLoading(false);
+    };
+    if (id) fetchSnippet();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-[var(--color-text-muted)] space-y-4">
+        <FaSpinner className="animate-spin text-4xl text-[var(--color-primary)]" />
+        <p>Loading snippet...</p>
+      </div>
+    );
+  }
 
   if (!snippet) {
     return (
@@ -25,19 +49,25 @@ export default function ViewSnippet() {
     );
   }
 
-  const isOwner = snippet.ownerId === MOCK_USER_ID;
+  const isOwner = snippet.user_id === user?.id;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(snippet.code);
+    navigator.clipboard.writeText(snippet.code_content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this snippet?")) {
-      // mock delete
+      await supabase.from('snippets').delete().eq('id', snippet.id);
       navigate("/dashboard");
     }
+  };
+
+  const handleToggleFav = async () => {
+    const currentFavStatus = snippet.is_favorite;
+    setSnippet({ ...snippet, is_favorite: !currentFavStatus });
+    await supabase.from('snippets').update({ is_favorite: !currentFavStatus }).eq('id', snippet.id);
   };
 
   return (
@@ -61,14 +91,14 @@ export default function ViewSnippet() {
                 {snippet.language}
               </span>
               <span className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-                {snippet.isPublic ? (
+                {snippet.is_public ? (
                   <><FaGlobeAmericas /> Public</>
                 ) : (
                   <><FaLock /> Private</>
                 )}
               </span>
               <span className="text-[var(--color-text-muted)] flex items-center gap-1.5 before:content-['•'] before:mr-2">
-                Created {new Date(snippet.createdAt).toLocaleDateString()}
+                Created {new Date(snippet.created_at).toLocaleDateString()}
               </span>
             </div>
           </div>
@@ -84,6 +114,14 @@ export default function ViewSnippet() {
 
         {/* Actions */}
         <div className="flex items-center gap-3 self-start">
+          <button 
+            onClick={handleToggleFav}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all shadow-md border ${snippet.is_favorite ? 'bg-pink-500/20 text-pink-500 border-pink-500/30' : 'bg-[var(--color-surface)] hover:bg-pink-500/10 border-[var(--color-border)] hover:border-pink-500/30 text-gray-200 hover:text-pink-500'}`}
+          >
+            {snippet.is_favorite ? <FaHeart /> : <FaRegHeart />}
+            {snippet.is_favorite ? "Favorited" : "Favorite"}
+          </button>
+          
           <button 
             onClick={handleCopy}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all shadow-md ${
@@ -135,7 +173,7 @@ export default function ViewSnippet() {
           
           <pre className="p-6 sm:pl-16 text-sm md:text-base font-mono text-gray-300 overflow-x-auto whitespace-pre leading-relaxed selection:bg-[var(--color-primary)]/40 relative z-10 w-full mb-0">
             <code>
-              {snippet.code}
+              {snippet.code_content}
             </code>
           </pre>
         </div>
